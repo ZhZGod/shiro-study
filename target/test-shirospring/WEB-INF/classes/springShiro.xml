@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util-3.0.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+	<!-- 自动扫描包名 -->
+	<context:component-scan base-package="com.zzh.shiro" />
+	<bean id="shiroSessionListener" class="com.zzh.shiro.listener.ShiroSessionListener"></bean>
+	<!--filter配置策略-->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager"/>
+		<property name="loginUrl" value="/index"/>
+		<!--登录成功默认跳转页面，不配置则跳转至”/”。如果登陆前点击的一个需要登录的页面，则在登录自动跳转到那个需要登录的页面。不跳转到此。-->
+		<property name="successUrl" value="/home"/>
+		<!--unauthorizedUrl：没有权限默认跳转的页面。-->
+		<property name="unauthorizedUrl" value="/unauthorized.jsp"/>
+		<!-- The 'filters' property is not necessary since any declared javax.servlet.Filter bean  -->
+		<!-- defined will be automatically acquired and available via its beanName in chain        -->
+		<!-- definitions, but you can perform instance overrides or name aliases here if you like: -->
+		<!-- <property name="filters">
+            <util:map>
+                <entry key="logout" value-ref="logoutFilter" />
+            </util:map>
+        </property> -->
+		<property name="filterChainDefinitions">
+			<value>
+				/login = anon
+				/logout = anon
+				/error = anon
+				/** = user
+			</value>
+		</property>
+	</bean>
+	<!--会话管理-->
+	 <bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+	       <!-- 设置全局会话超时时间，默认30分钟，即如果30分钟内没有访问会话将过期 1800000 -->
+	       <property name="globalSessionTimeout" value="1800000"/>
+	        <!-- 删除失效的session -->
+	       <property name="deleteInvalidSessions" value="true"/>
+	       <!-- 是否开启会话验证器，默认是开启的 -->
+		 <property name="sessionValidationSchedulerEnabled" value="true"/>
+		 <property name ="sessionListeners">
+			 <list>
+				 <ref bean="shiroSessionListener"/>
+			 </list>
+		 </property>
+	 </bean>
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="myRealm" />
+		<property name="cacheManager" ref="cacheManager" />
+		<property name="sessionManager" ref="sessionManager"></property>
+	</bean>
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+	<bean id="myRealm" class="com.zzh.shiro.dao.UserRealm"></bean>
+
+	<bean id="cacheManager" class="org.apache.shiro.cache.MemoryConstrainedCacheManager" />
+
+	<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor"/>
+	<bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager"/>
+	</bean>
+</beans>
